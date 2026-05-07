@@ -26,10 +26,9 @@ Collibra Dashboards support an **HTML widget** that accepts arbitrary HTML marku
 ### Step-by-step
 
 1. **Open** your Collibra instance and navigate to a Dashboard (or create a new one).
-2. **Add widget** → choose **HTML** from the widget picker.
-3. **Open the widget editor** (pencil / edit icon on the widget).
-4. **Copy the full contents** of `swapi.html` and paste them into the HTML editor.
-5. **Save** the widget. The app renders immediately inside the dashboard tile.
+2. **Add widget** → choose **Embed Widget** from the widget picker.
+3. **Open the widget configuration editor** (/resources/images/PATH-TO-FILE-swapi.html).
+4. **Save** the widget. The app renders immediately inside the dashboard tile.
 
 ### Tips
 
