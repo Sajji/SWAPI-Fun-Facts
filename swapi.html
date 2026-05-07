@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Wars Random Facts</title>
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #07080f;
+      --card-bg: #0d1120;
+      --card-border: #c9a227;
+      --text: #e8e8ee;
+      --text-muted: #7a7a9a;
+      --accent: #c9a227;
+      --accent-soft: rgba(201,162,39,0.25);
+      --accent-glow: rgba(201,162,39,0.18);
+      --btn-bg: #c9a227;
+      --btn-text: #07080f;
+      --tag-bg: rgba(201,162,39,0.1);
+      --tag-border: rgba(201,162,39,0.25);
+      --divider: rgba(201,162,39,0.18);
+      --shadow: rgba(0,0,0,0.5);
+      --crawl-border: #c9a227;
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f2ede2;
+      --card-bg: #fffef8;
+      --card-border: #a07820;
+      --text: #1a1a2e;
+      --text-muted: #636378;
+      --accent: #8b6914;
+      --accent-soft: rgba(139,105,20,0.2);
+      --accent-glow: rgba(139,105,20,0.12);
+      --btn-bg: #8b6914;
+      --btn-text: #ffffff;
+      --tag-bg: rgba(139,105,20,0.09);
+      --tag-border: rgba(139,105,20,0.2);
+      --divider: rgba(139,105,20,0.18);
+      --shadow: rgba(0,0,0,0.1);
+      --crawl-border: #8b6914;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { height: 100%; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.35s, color 0.35s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Starfield canvas — dark only */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      display: block;
+    }
+    [data-theme="light"] #starfield { display: none; }
+
+    .container {
+      width: 100%;
+      max-width: 740px;
+      padding: 1.6rem 1.5rem 1.2rem;
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .logo-line {
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    h1 {
+      font-size: clamp(1.65rem, 5.5vw, 2.5rem);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-shadow: 0 0 40px var(--accent-glow);
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.45rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    /* ── Theme toggle ── */
+    .theme-toggle {
+      position: fixed;
+      top: 1.1rem;
+      right: 1.4rem;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      border-radius: 50px;
+      padding: 0.38rem 1rem;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: background 0.2s, border-color 0.2s;
+      z-index: 100;
+      user-select: none;
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    /* ── Fact card ── */
+    .fact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.6rem 1.8rem 1.6rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 50px var(--accent-glow), 0 6px 30px var(--shadow);
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--card-border) transparent;
+    }
+
+    .fact-card::-webkit-scrollbar { width: 5px; }
+    .fact-card::-webkit-scrollbar-track { background: transparent; }
+    .fact-card::-webkit-scrollbar-thumb {
+      background: var(--card-border);
+      border-radius: 99px;
+      opacity: 0.5;
+    }
+
+    .fact-card.animating {
+      animation: fadeSlideIn 0.38s ease;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Category badge ── */
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--tag-bg);
+      color: var(--accent);
+      border: 1px solid var(--tag-border);
+      border-radius: 50px;
+      padding: 0.28rem 0.9rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 1.1rem;
+    }
+
+    .fact-title {
+      font-size: clamp(1.35rem, 4vw, 1.85rem);
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      line-height: 1.25;
+      margin-bottom: 0.35rem;
+    }
+
+    .fact-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 1.3rem;
+      font-style: italic;
+    }
+
+    hr.divider {
+      border: none;
+      border-top: 1px solid var(--divider);
+      margin: 1.2rem 0;
+    }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .stat-item {
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+    }
+
+    .stat-label {
+      font-size: 0.67rem;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Opening crawl ── */
+    .crawl-text {
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: var(--text);
+      background: var(--tag-bg);
+      border-left: 3px solid var(--crawl-border);
+      padding: 1rem 1.2rem;
+      border-radius: 0 8px 8px 0;
+      white-space: pre-line;
+      font-style: italic;
+    }
+
+    /* ── Loading ── */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      min-height: 140px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--tag-border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ── */
+    .error-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 140px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    .error-state .err-icon { font-size: 2rem; }
+
+    /* ── Button ── */
+    .actions { display: flex; justify-content: center; flex-shrink: 0; padding-top: 0.1rem; }
+
+    .btn-next {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 8px;
+      padding: 0.85rem 2.6rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: filter 0.18s, transform 0.15s, box-shadow 0.18s;
+      box-shadow: 0 0 22px var(--accent-glow);
+    }
+
+    .btn-next:hover:not(:disabled) {
+      filter: brightness(1.18);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px var(--accent-soft);
+    }
+
+    .btn-next:active:not(:disabled) { transform: translateY(0); }
+
+    .btn-next:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 0.7rem;
+      text-align: center;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      flex-shrink: 0;
+      padding-bottom: 0.6rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .container { padding: 1rem 1rem 0.8rem; }
+      .fact-card { padding: 1.2rem 1.1rem; margin-bottom: 0.8rem; }
+      .stats-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.55rem; }
+      h1 { font-size: clamp(1.3rem, 7vw, 1.8rem); }
+      .logo-line { display: none; }
+      header { margin-bottom: 0.85rem; }
+      .btn-next { padding: 0.75rem 1.8rem; font-size: 0.8rem; }
+      footer { font-size: 0.68rem; }
+    }
+
+    @media (min-width: 601px) and (max-width: 860px) {
+      .container { padding: 1.4rem 1.2rem 1rem; max-width: 100%; }
+      .stats-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    }
+
+    @media (min-width: 861px) {
+      .container { max-width: 760px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">&#9728; Light</button>
+
+  <div class="container">
+    <header>
+      <div class="logo-line">A long time ago in a galaxy far, far away&hellip;</div>
+      <h1>Star Wars Random Facts</h1>
+      <div class="subtitle">Exploring the galaxy one fact at a time</div>
+    </header>
+
+    <div class="fact-card" id="factCard">
+      <div class="loading">
+        <div class="spinner"></div>
+        Accessing Holocron Database&hellip;
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-next" id="nextBtn" onclick="loadRandomFact()" disabled>
+        &#8635;&nbsp; Next Random Fact
+      </button>
+    </div>
+
+    <footer>
+      Data from <a href="https://swapi.info" target="_blank" rel="noopener noreferrer">swapi.info</a>
+      &nbsp;&middot;&nbsp; May the Force be with you
+    </footer>
+  </div>
+
+  <script>
+    'use strict';
+
+    const BASE = 'https://swapi.info/api';
+    const CATEGORIES = ['films', 'people', 'planets', 'species', 'starships', 'vehicles'];
+    const ICONS = { films: '🎬', people: '👤', planets: '🪐', species: '👾', starships: '🚀', vehicles: '🛸' };
+    const cache = {};
+    let isLoading = false;
+
+    // ── Fetch helpers ────────────────────────────────────────────
+
+    async function fetchCategory(cat) {
+      if (cache[cat]) return cache[cat];
+      const res = await fetch(`${BASE}/${cat}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('Unexpected response format');
+      cache[cat] = data;
+      return data;
+    }
+
+    // ── Utility ──────────────────────────────────────────────────
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function fmt(val, suffix = '') {
+      if (val == null || val === '' || val === 'unknown' || val === 'n/a') return null;
+      const n = parseFloat(String(val).replace(/,/g, ''));
+      const display = isNaN(n) ? val : n.toLocaleString();
+      return display + suffix;
+    }
+
+    function cap(str) {
+      if (!str || str === 'n/a' || str === 'unknown') return str || null;
+      return str.split(/[\s,]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function roman(n) {
+      return { 1:'I', 2:'II', 3:'III', 4:'IV', 5:'V', 6:'VI' }[n] || n;
+    }
+
+    function stat(label, value) {
+      if (value == null || value === '' || value === 'unknown' || value === 'n/a') return '';
+      return `<div class="stat-item"><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`;
+    }
+
+    function countStat(label, arr) {
+      return Array.isArray(arr) && arr.length > 0 ? stat(label, arr.length) : '';
+    }
+
+    // ── Renderers ────────────────────────────────────────────────
+
+    function badge(cat) {
+      return `<div class="category-badge">${ICONS[cat]} ${cat.toUpperCase()}</div>`;
+    }
+
+    function renderFilm(f) {
+      return `${badge('films')}
+        <div class="fact-title">Episode ${roman(f.episode_id)}: ${f.title}</div>
+        <div class="fact-subtitle">Directed by ${f.director}&ensp;&middot;&ensp;Released ${f.release_date}</div>
+        <div class="crawl-text">${(f.opening_crawl || '').trim()}</div>
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Director', f.director)}
+          ${stat('Producer', f.producer)}
+          ${stat('Release Date', f.release_date)}
+          ${countStat('Characters', f.characters)}
+          ${countStat('Planets', f.planets)}
+          ${countStat('Starships', f.starships)}
+          ${countStat('Vehicles', f.vehicles)}
+          ${countStat('Species', f.species)}
+        </div>`;
+    }
+
+    function renderPerson(p) {
+      const sub = [p.gender && p.gender !== 'n/a' ? cap(p.gender) : null, p.birth_year ? `Born ${p.birth_year}` : null]
+        .filter(Boolean).join('&ensp;&middot;&ensp;');
+      return `${badge('people')}
+        <div class="fact-title">${p.name}</div>
+        ${sub ? `<div class="fact-subtitle">${sub}</div>` : ''}
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Height', fmt(p.height, ' cm'))}
+          ${stat('Mass', fmt(p.mass, ' kg'))}
+          ${stat('Hair Color', cap(p.hair_color))}
+          ${stat('Skin Color', cap(p.skin_color))}
+          ${stat('Eye Color', cap(p.eye_color))}
+          ${stat('Birth Year', p.birth_year)}
+          ${stat('Gender', cap(p.gender))}
+          ${countStat('Films', p.films)}
+          ${countStat('Vehicles', p.vehicles)}
+          ${countStat('Starships', p.starships)}
+        </div>`;
+    }
+
+    function renderPlanet(p) {
+      const sub = [cap(p.climate), cap(p.terrain) ? `${cap(p.terrain)} terrain` : null]
+        .filter(Boolean).join('&ensp;&middot;&ensp;');
+      return `${badge('planets')}
+        <div class="fact-title">${p.name}</div>
+        ${sub ? `<div class="fact-subtitle">${sub}</div>` : ''}
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Climate', cap(p.climate))}
+          ${stat('Terrain', cap(p.terrain))}
+          ${stat('Population', fmt(p.population))}
+          ${stat('Diameter', fmt(p.diameter, ' km'))}
+          ${stat('Gravity', p.gravity)}
+          ${stat('Rotation Period', fmt(p.rotation_period, ' hrs'))}
+          ${stat('Orbital Period', fmt(p.orbital_period, ' days'))}
+          ${stat('Surface Water', fmt(p.surface_water, '%'))}
+          ${countStat('Known Residents', p.residents)}
+          ${countStat('Films Featured', p.films)}
+        </div>`;
+    }
+
+    function renderSpecies(s) {
+      const sub = [cap(s.classification), cap(s.designation)]
+        .filter(Boolean).join('&ensp;&middot;&ensp;');
+      return `${badge('species')}
+        <div class="fact-title">${s.name}</div>
+        ${sub ? `<div class="fact-subtitle">${sub}</div>` : ''}
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Classification', cap(s.classification))}
+          ${stat('Designation', cap(s.designation))}
+          ${stat('Language', s.language)}
+          ${stat('Avg. Height', fmt(s.average_height, ' cm'))}
+          ${stat('Avg. Lifespan', fmt(s.average_lifespan, ' yrs'))}
+          ${stat('Eye Colors', s.eye_colors)}
+          ${stat('Hair Colors', s.hair_colors)}
+          ${stat('Skin Colors', s.skin_colors)}
+          ${countStat('Known People', s.people)}
+          ${countStat('Films Featured', s.films)}
+        </div>`;
+    }
+
+    function renderStarship(s) {
+      const sub = [s.model, s.starship_class].filter(v => v && v !== 'unknown').join('&ensp;&middot;&ensp;');
+      return `${badge('starships')}
+        <div class="fact-title">${s.name}</div>
+        ${sub ? `<div class="fact-subtitle">${sub}</div>` : ''}
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Manufacturer', s.manufacturer)}
+          ${stat('Class', s.starship_class)}
+          ${stat('Length', fmt(s.length, ' m'))}
+          ${stat('Cost', fmt(s.cost_in_credits, ' credits'))}
+          ${stat('Crew', fmt(s.crew))}
+          ${stat('Passengers', fmt(s.passengers))}
+          ${stat('Max Speed', fmt(s.max_atmosphering_speed))}
+          ${stat('Hyperdrive Rating', fmt(s.hyperdrive_rating))}
+          ${stat('Cargo Capacity', fmt(s.cargo_capacity, ' kg'))}
+          ${stat('Consumables', s.consumables)}
+          ${stat('MGLT', fmt(s.MGLT))}
+          ${countStat('Films', s.films)}
+        </div>`;
+    }
+
+    function renderVehicle(v) {
+      const sub = [v.model, v.vehicle_class].filter(x => x && x !== 'unknown').join('&ensp;&middot;&ensp;');
+      return `${badge('vehicles')}
+        <div class="fact-title">${v.name}</div>
+        ${sub ? `<div class="fact-subtitle">${sub}</div>` : ''}
+        <hr class="divider">
+        <div class="stats-grid">
+          ${stat('Manufacturer', v.manufacturer)}
+          ${stat('Class', v.vehicle_class)}
+          ${stat('Length', fmt(v.length, ' m'))}
+          ${stat('Cost', fmt(v.cost_in_credits, ' credits'))}
+          ${stat('Crew', fmt(v.crew))}
+          ${stat('Passengers', fmt(v.passengers))}
+          ${stat('Max Speed', fmt(v.max_atmosphering_speed))}
+          ${stat('Cargo Capacity', fmt(v.cargo_capacity, ' kg'))}
+          ${stat('Consumables', v.consumables)}
+          ${countStat('Films', v.films)}
+        </div>`;
+    }
+
+    const renderers = { films: renderFilm, people: renderPerson, planets: renderPlanet, species: renderSpecies, starships: renderStarship, vehicles: renderVehicle };
+
+    // ── Load random fact ─────────────────────────────────────────
+
+    async function loadRandomFact() {
+      if (isLoading) return;
+      isLoading = true;
+
+      const card = document.getElementById('factCard');
+      const btn  = document.getElementById('nextBtn');
+      btn.disabled = true;
+      card.classList.remove('animating');
+      card.innerHTML = `<div class="loading"><div class="spinner"></div>Accessing Holocron Database&hellip;</div>`;
+
+      try {
+        const cat   = pick(CATEGORIES);
+        const items = await fetchCategory(cat);
+        const item  = pick(items);
+        const html  = renderers[cat](item);
+
+        card.innerHTML = html;
+        // Trigger reflow so animation replays
+        void card.offsetWidth;
+        card.classList.add('animating');
+      } catch (err) {
+        card.innerHTML = `<div class="error-state">
+          <span class="err-icon">⚠</span>
+          <strong>The Force connection was lost.</strong>
+          <span>Check your connection and try again.</span>
+        </div>`;
+      } finally {
+        isLoading = false;
+        btn.disabled = false;
+      }
+    }
+
+    // ── Theme toggle ─────────────────────────────────────────────
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const btn  = document.getElementById('themeToggle');
+      if (html.dataset.theme === 'dark') {
+        html.dataset.theme = 'light';
+        btn.innerHTML = '&#9790; Dark';
+        stopStarfield();
+      } else {
+        html.dataset.theme = 'dark';
+        btn.innerHTML = '&#9728; Light';
+        startStarfield();
+      }
+    }
+
+    // ── Starfield ────────────────────────────────────────────────
+
+    const STAR_COUNT = 220;
+    const SPEED      = 4;     // px per frame (z-depth units)
+    const FOCAL      = 400;   // perspective focal length
+
+    let sfCanvas, sfCtx, sfStars = [], sfRaf = null;
+
+    function sfReset(s, w, h) {
+      s.x  = (Math.random() - 0.5) * w * 2;
+      s.y  = (Math.random() - 0.5) * h * 2;
+      s.z  = Math.random() * w + 1;
+      s.pz = s.z;
+    }
+
+    function initStarfield() {
+      sfCanvas = document.getElementById('starfield');
+      sfCtx    = sfCanvas.getContext('2d');
+      resizeStarfield();
+      window.addEventListener('resize', resizeStarfield);
+    }
+
+    function resizeStarfield() {
+      sfCanvas.width  = window.innerWidth;
+      sfCanvas.height = window.innerHeight;
+      sfStars = [];
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const s = {};
+        sfReset(s, sfCanvas.width, sfCanvas.height);
+        // scatter z so they don't all rush in at once on load
+        s.z  = Math.random() * sfCanvas.width;
+        s.pz = s.z;
+        sfStars.push(s);
+      }
+    }
+
+    function drawStarfield() {
+      const w = sfCanvas.width, h = sfCanvas.height;
+      const cx = w / 2, cy = h / 2;
+
+      sfCtx.fillStyle = '#07080f';
+      sfCtx.fillRect(0, 0, w, h);
+
+      for (const s of sfStars) {
+        // previous projected position
+        const px = (s.x / s.pz) * FOCAL + cx;
+        const py = (s.y / s.pz) * FOCAL + cy;
+
+        // advance
+        s.pz = s.z;
+        s.z -= SPEED;
+
+        if (s.z <= 0) { sfReset(s, w, h); continue; }
+
+        // current projected position
+        const sx = (s.x / s.z) * FOCAL + cx;
+        const sy = (s.y / s.z) * FOCAL + cy;
+
+        // cull off-screen
+        if (sx < 0 || sx > w || sy < 0 || sy > h) { sfReset(s, w, h); continue; }
+
+        const depth   = 1 - s.z / w;
+        const opacity = Math.min(1, depth * 1.4);
+        const width   = Math.max(0.4, depth * 1.8);
+
+        sfCtx.beginPath();
+        sfCtx.moveTo(px, py);
+        sfCtx.lineTo(sx, sy);
+        sfCtx.strokeStyle = `rgba(255,255,255,${opacity.toFixed(2)})`;
+        sfCtx.lineWidth   = width;
+        sfCtx.stroke();
+      }
+
+      sfRaf = requestAnimationFrame(drawStarfield);
+    }
+
+    function startStarfield() {
+      if (sfRaf) return;
+      sfRaf = requestAnimationFrame(drawStarfield);
+    }
+
+    function stopStarfield() {
+      if (sfRaf) { cancelAnimationFrame(sfRaf); sfRaf = null; }
+      if (sfCtx) sfCtx.clearRect(0, 0, sfCanvas.width, sfCanvas.height);
+    }
+
+    // ── Init ─────────────────────────────────────────────────────
+
+    initStarfield();
+    startStarfield();
+    loadRandomFact();
+  </script>
+</body>
+</html>
